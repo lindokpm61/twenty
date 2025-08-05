@@ -7,145 +7,53 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES:-changeme123}
-      POSTGRES_DB: default
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES:-postgres}
     healthcheck:
-      test: pg_isready -U postgres -h localhost -d default
+      test: pg_isready -U ${PG_DATABASE_USER:-postgres} -h localhost -d postgres
       interval: 5s
       timeout: 5s
       retries: 10
     restart: always
 
-  # Redis cache (REQUIRED from version 0.23+)
+  # Redis cache
   redis:
-    image: redis:alpine
+    image: redis
     restart: always
     command: ["--maxmemory-policy", "noeviction"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
-  # Init container - creates schemas and runs migrations
-  init:
-    image: twentycrm/twenty:${TAG:-latest}
-    command: |
-      sh -c "
-        echo 'Installing PostgreSQL client...'
-        apt-get update && apt-get install -y postgresql-client || true
-        echo 'Waiting for database...'
-        until pg_isready -h db -U postgres -d default; do
-          sleep 1
-        done
-        echo 'Creating schemas...'
-        PGPASSWORD=${SERVICE_PASSWORD_POSTGRES:-changeme123} psql -h db -U postgres -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
-        echo 'Running migrations...'
-        yarn database:migrate:prod || true
-        echo 'Init completed!'
-      "
-    environment:
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
-      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES:-changeme123}
-      REDIS_URL: redis://redis:6379
-      APP_SECRET: ${SERVICE_BASE64_64_APP:-please_generate_a_secure_secret_here}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    restart: "no"
-
-  # Twenty server
+  # Twenty server - CRITICAL: SERVER_URL must be a valid URL
   server:
     image: twentycrm/twenty:${TAG:-latest}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
+    ports:
+      - "3000:3000"
     environment:
-      # Coolify magic - automatic FQDN and port mapping
-      SERVICE_FQDN_SERVER_3000: ${SERVICE_FQDN_SERVER_3000}
-      
-      # Basic configuration
       NODE_PORT: 3000
-      SERVER_URL: ${SERVICE_FQDN_SERVER}
-      FRONT_BASE_URL: ${SERVICE_FQDN_SERVER}
-      
-      # Database
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
-      
-      # Redis (all possible formats for compatibility)
+      # CRITICAL: This must be set to your actual Coolify domain in environment variables
+      SERVER_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${SERVICE_PASSWORD_POSTGRES:-postgres}@db:5432/default
       REDIS_URL: redis://redis:6379
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      CACHE_STORAGE_TYPE: redis
-      
-      # Security tokens (Coolify generates automatically)
-      APP_SECRET: ${SERVICE_BASE64_64_APP:-please_generate_a_secure_secret_here}
-      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS:-please_generate_a_secure_token_here}
-      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN:-please_generate_a_secure_token_here}
-      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH:-please_generate_a_secure_token_here}
-      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE:-please_generate_a_secure_token_here}
-      
-      # Migrations - disabled, because they already ran in init container
-      ENABLE_DB_MIGRATIONS: false
-      DISABLE_DB_MIGRATIONS: true
+      DISABLE_DB_MIGRATIONS: ${DISABLE_DB_MIGRATIONS:-false}
       DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION:-false}
       
-      # Storage
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       STORAGE_S3_REGION: ${STORAGE_S3_REGION}
       STORAGE_S3_NAME: ${STORAGE_S3_NAME}
       STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
-      
-      # API Rate Limiting
-      API_RATE_LIMITING_TTL: ${API_RATE_LIMITING_TTL:-100}
-      API_RATE_LIMITING_LIMIT: ${API_RATE_LIMITING_LIMIT:-100}
-      
-      # Optional features
-      IS_MULTIWORKSPACE_ENABLED: ${IS_MULTIWORKSPACE_ENABLED:-false}
-      IS_SIGN_UP_DISABLED: ${IS_SIGN_UP_DISABLED:-false}
-      
-      # Google Integration (set these in Coolify environment variables)
-      MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED:-false}
-      CALENDAR_PROVIDER_GOOGLE_ENABLED: ${CALENDAR_PROVIDER_GOOGLE_ENABLED:-false}
-      AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
-      AUTH_GOOGLE_CLIENT_SECRET: ${AUTH_GOOGLE_CLIENT_SECRET}
-      AUTH_GOOGLE_CALLBACK_URL: ${AUTH_GOOGLE_CALLBACK_URL}
-      AUTH_GOOGLE_APIS_CALLBACK_URL: ${AUTH_GOOGLE_APIS_CALLBACK_URL}
 
-      # Microsoft Integration (set these in Coolify environment variables)
-      CALENDAR_PROVIDER_MICROSOFT_ENABLED: ${CALENDAR_PROVIDER_MICROSOFT_ENABLED:-false}
-      MESSAGING_PROVIDER_MICROSOFT_ENABLED: ${MESSAGING_PROVIDER_MICROSOFT_ENABLED:-false}
-      AUTH_MICROSOFT_ENABLED: ${AUTH_MICROSOFT_ENABLED:-false}
-      AUTH_MICROSOFT_CLIENT_ID: ${AUTH_MICROSOFT_CLIENT_ID}
-      AUTH_MICROSOFT_CLIENT_SECRET: ${AUTH_MICROSOFT_CLIENT_SECRET}
-      AUTH_MICROSOFT_CALLBACK_URL: ${AUTH_MICROSOFT_CALLBACK_URL}
-      AUTH_MICROSOFT_APIS_CALLBACK_URL: ${AUTH_MICROSOFT_APIS_CALLBACK_URL}
+      APP_SECRET: ${SERVICE_BASE64_64_APP:55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW}
 
-      # Email Configuration (set these in Coolify environment variables)
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
-      EMAIL_SYSTEM_ADDRESS: ${EMAIL_SYSTEM_ADDRESS}
-      EMAIL_DRIVER: ${EMAIL_DRIVER:-smtp}
-      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
-      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-587}
-      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
-      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD}
-      
     depends_on:
-      init:
-        condition: service_completed_successfully
       db:
         condition: service_healthy
-      redis:
-        condition: service_started
+    # Temporarily disabled to debug
     # healthcheck:
-    #   test: curl --fail http://localhost:3000/healthz || exit 1
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 10
-    #   start_period: 30s
+    #   test: curl --fail http://localhost:3000/healthz
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 20
     restart: always
 
   # Twenty worker
@@ -155,66 +63,22 @@ services:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
     environment:
-      # Database
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
-      
-      # Redis
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${SERVICE_PASSWORD_POSTGRES:-postgres}@db:5432/default
+      SERVER_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
       REDIS_URL: redis://redis:6379
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      CACHE_STORAGE_TYPE: redis
-      
-      # Security tokens (same as server)
-      APP_SECRET: ${SERVICE_BASE64_64_APP:-please_generate_a_secure_secret_here}
-      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS:-please_generate_a_secure_token_here}
-      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN:-please_generate_a_secure_token_here}
-      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH:-please_generate_a_secure_token_here}
-      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE:-please_generate_a_secure_token_here}
-      
-      # Migrations disabled - they already ran in init container
-      ENABLE_DB_MIGRATIONS: false
-      DISABLE_DB_MIGRATIONS: true
-      DISABLE_CRON_JOBS_REGISTRATION: true
-      
-      # Storage
+      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_CRON_JOBS_REGISTRATION: "true"
+
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
       STORAGE_S3_REGION: ${STORAGE_S3_REGION}
       STORAGE_S3_NAME: ${STORAGE_S3_NAME}
       STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
-      
-      # URL
-      SERVER_URL: ${SERVICE_FQDN_SERVER}
-      
-      # Google Integration
-      MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED:-false}
-      CALENDAR_PROVIDER_GOOGLE_ENABLED: ${CALENDAR_PROVIDER_GOOGLE_ENABLED:-false}
-      AUTH_GOOGLE_CLIENT_ID: ${AUTH_GOOGLE_CLIENT_ID}
-      AUTH_GOOGLE_CLIENT_SECRET: ${AUTH_GOOGLE_CLIENT_SECRET}
-      AUTH_GOOGLE_CALLBACK_URL: ${AUTH_GOOGLE_CALLBACK_URL}
-      AUTH_GOOGLE_APIS_CALLBACK_URL: ${AUTH_GOOGLE_APIS_CALLBACK_URL}
 
-      # Microsoft Integration
-      CALENDAR_PROVIDER_MICROSOFT_ENABLED: ${CALENDAR_PROVIDER_MICROSOFT_ENABLED:-false}
-      MESSAGING_PROVIDER_MICROSOFT_ENABLED: ${MESSAGING_PROVIDER_MICROSOFT_ENABLED:-false}
-      AUTH_MICROSOFT_ENABLED: ${AUTH_MICROSOFT_ENABLED:-false}
-      AUTH_MICROSOFT_CLIENT_ID: ${AUTH_MICROSOFT_CLIENT_ID}
-      AUTH_MICROSOFT_CLIENT_SECRET: ${AUTH_MICROSOFT_CLIENT_SECRET}
-      AUTH_MICROSOFT_CALLBACK_URL: ${AUTH_MICROSOFT_CALLBACK_URL}
-      AUTH_MICROSOFT_APIS_CALLBACK_URL: ${AUTH_MICROSOFT_APIS_CALLBACK_URL}
+      APP_SECRET: ${SERVICE_BASE64_64_APP:55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW}
 
-      # Email Configuration
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
-      EMAIL_SYSTEM_ADDRESS: ${EMAIL_SYSTEM_ADDRESS}
-      EMAIL_DRIVER: ${EMAIL_DRIVER:-smtp}
-      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
-      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-587}
-      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
-      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD}
-      
     depends_on:
-      init:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       server:
         condition: service_started
     restart: always
