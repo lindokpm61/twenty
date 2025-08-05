@@ -103,7 +103,7 @@ services:
       API_RATE_LIMITING_LIMIT: ${API_RATE_LIMITING_LIMIT:-100}
       
       # Optional features
-      IS_MULTIWORKSPACE_ENABLED: ${IS_MULTIWORKSPACE_ENABLED:-false}
+      IS_MULTIWORKSPACE_ENABLED: ${IS_MULTIWORKSPACE_ENABLED:-true}
       IS_SIGN_UP_DISABLED: ${IS_SIGN_UP_DISABLED:-false}
       
       # Google Integration (set these in Coolify environment variables)
