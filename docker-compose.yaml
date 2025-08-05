@@ -46,10 +46,11 @@ services:
         echo 'Migration completed!'
       "
     environment:
+      NODE_ENV: production
       PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
       POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES:-changeme123}
       REDIS_URL: redis://redis:6379
-      APP_SECRET: ${SERVICE_BASE64_64_APP:-please_generate_a_secure_secret_here}
+      APP_SECRET: ${SERVICE_BASE64_64_APP:-change_me_in_production_use_openssl_rand_base64_32}
     depends_on:
       db:
         condition: service_healthy
@@ -63,13 +64,11 @@ services:
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     environment:
-      # Coolify magic - automatic FQDN and port mapping
-      SERVICE_FQDN_SERVER_3000: ${SERVICE_FQDN_SERVER_3000}
-      
-      # Basic configuration
+      # Basic configuration - Twenty CRM expects SERVER_URL, not SERVICE_FQDN_SERVER
+      NODE_ENV: production
       NODE_PORT: 3000
-      SERVER_URL: ${SERVICE_FQDN_SERVER}
-      FRONT_BASE_URL: ${SERVICE_FQDN_SERVER}
+      SERVER_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
+      FRONT_BASE_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
       
       # Database
       PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
@@ -80,8 +79,8 @@ services:
       REDIS_PORT: 6379
       CACHE_STORAGE_TYPE: redis
       
-      # Security tokens (Coolify generates automatically)
-      APP_SECRET: ${SERVICE_BASE64_64_APP:-please_generate_a_secure_secret_here}
+      # Security tokens - REQUIRED by Twenty CRM 
+      APP_SECRET: ${SERVICE_BASE64_64_APP:-change_me_in_production_use_openssl_rand_base64_32}
       ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS:-please_generate_a_secure_token_here}
       LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN:-please_generate_a_secure_token_here}
       REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH:-please_generate_a_secure_token_here}
@@ -156,6 +155,9 @@ services:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
     environment:
+      # Production environment
+      NODE_ENV: production
+      
       # Database
       PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES:-changeme123}@db:5432/default
       
@@ -184,7 +186,7 @@ services:
       STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
       
       # URL
-      SERVER_URL: ${SERVICE_FQDN_SERVER}
+      SERVER_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
       
       # Google Integration
       MESSAGING_PROVIDER_GMAIL_ENABLED: ${MESSAGING_PROVIDER_GMAIL_ENABLED:-false}
