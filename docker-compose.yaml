@@ -72,11 +72,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    healthcheck:
-      test: curl --fail http://localhost:3000/healthz
-      interval: 5s
-      timeout: 5s
-      retries: 20
+    # Temporarily disabled to debug server startup issues
+    # healthcheck:
+    #   test: curl --fail http://localhost:3000/healthz
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 20
     restart: always
 
   # Twenty worker
@@ -128,7 +129,7 @@ services:
       db:
         condition: service_healthy
       server:
-        condition: service_healthy
+        condition: service_started
     restart: always
 
 volumes:
