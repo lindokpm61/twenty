@@ -28,7 +28,7 @@ services:
 
   # Init container - creates schemas and runs migrations
   init:
-    image: twentycrm/twenty:${TAG:-v0.52.6}
+    image: twentycrm/twenty:${TAG:-latest}
     command: |
       sh -c "
         echo 'Installing PostgreSQL client...'
