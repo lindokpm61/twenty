@@ -22,7 +22,7 @@ services:
     restart: always
     command: ["--maxmemory-policy", "noeviction"]
 
-  # Twenty server - CRITICAL: SERVER_URL must be a valid URL
+  # Twenty server
   server:
     image: twentycrm/twenty:${TAG:-latest}
     volumes:
@@ -31,7 +31,6 @@ services:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      # CRITICAL: This must be set to your actual Coolify domain in environment variables
       SERVER_URL: ${SERVICE_FQDN_SERVER:-http://localhost:3000}
       PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${SERVICE_PASSWORD_POSTGRES:-postgres}@db:5432/default
       REDIS_URL: redis://redis:6379
@@ -39,21 +38,11 @@ services:
       DISABLE_CRON_JOBS_REGISTRATION: ${DISABLE_CRON_JOBS_REGISTRATION:-false}
       
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
-      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
-      STORAGE_S3_NAME: ${STORAGE_S3_NAME}
-      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
-
       APP_SECRET: ${SERVICE_BASE64_64_APP:55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW}
 
     depends_on:
       db:
         condition: service_healthy
-    # Temporarily disabled to debug
-    # healthcheck:
-    #   test: curl --fail http://localhost:3000/healthz
-    #   interval: 5s
-    #   timeout: 5s
-    #   retries: 20
     restart: always
 
   # Twenty worker
@@ -68,12 +57,7 @@ services:
       REDIS_URL: redis://redis:6379
       DISABLE_DB_MIGRATIONS: "true"
       DISABLE_CRON_JOBS_REGISTRATION: "true"
-
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
-      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
-      STORAGE_S3_NAME: ${STORAGE_S3_NAME}
-      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT}
-
       APP_SECRET: ${SERVICE_BASE64_64_APP:55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW}
 
     depends_on:
