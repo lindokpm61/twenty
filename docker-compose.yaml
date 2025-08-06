@@ -41,7 +41,7 @@ services:
     environment:
       NODE_PORT: 3000
       PG_DATABASE_URL: postgres://postgres:db_dc594fe426008af06a79f500@db:5432/default
-      SERVER_URL: https://twenty.keith-antony.com
+      SERVER_URL: https://crm.revenueleak.com
       REDIS_URL: redis://redis:6379
       
       # Migrations disabled - handled by migration container
@@ -105,7 +105,7 @@ services:
     command: ["yarn", "worker:prod"]
     environment:
       PG_DATABASE_URL: postgres://postgres:db_dc594fe426008af06a79f500@db:5432/default
-      SERVER_URL: https://twenty.keith-antony.com
+      SERVER_URL: https://crm.revenueleak.com
       REDIS_URL: redis://redis:6379
       DISABLE_DB_MIGRATIONS: "true"
 
