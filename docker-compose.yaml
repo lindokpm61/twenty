@@ -3,29 +3,27 @@ name: twenty
 services:
   # Migration container - creates schemas and runs migrations
   migration:
-    image: twentycrm/twenty:${TAG:-latest}
+    image: twentycrm/twenty:latest
     command: |
       sh -c "
         echo 'Installing PostgreSQL client...'
         apt-get update && apt-get install -y postgresql-client || true
         echo 'Waiting for database...'
-        until pg_isready -h ${PG_DATABASE_HOST:-db} -U ${PG_DATABASE_USER:-postgres} -d postgres; do
+        until pg_isready -h db -U postgres -d postgres; do
           sleep 1
         done
         echo 'Creating database and schemas...'
-        PGPASSWORD=$SERVICE_PASSWORD_DB psql -h ${PG_DATABASE_HOST:-db} -U ${PG_DATABASE_USER:-postgres} -d postgres -c 'CREATE DATABASE \"default\";' || true
-        PGPASSWORD=$SERVICE_PASSWORD_DB psql -h ${PG_DATABASE_HOST:-db} -U ${PG_DATABASE_USER:-postgres} -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
+        PGPASSWORD=ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb psql -h db -U postgres -d postgres -c 'CREATE DATABASE \"default\";' || true
+        PGPASSWORD=ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb psql -h db -U postgres -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
         echo 'Running migrations...'
         yarn database:migrate:prod || true
         echo 'Migration completed!'
       "
     environment:
-      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:$SERVICE_PASSWORD_DB@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
-      REDIS_URL: $REDIS_URL
-      APP_SECRET: $SERVICE_PASSWORD_APPSECRET
+      PG_DATABASE_URL: postgres://postgres:ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb@db:5432/default
+      REDIS_URL: redis://redis:6379
+      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
     depends_on:
-      migration:
-        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -33,7 +31,7 @@ services:
     restart: "no"
 
   server:
-    image: twentycrm/twenty:${TAG:-latest}
+    image: twentycrm/twenty:latest
     user: root
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
@@ -42,47 +40,49 @@ services:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:$SERVICE_PASSWORD_DB@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
+      PG_DATABASE_URL: postgres://postgres:ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb@db:5432/default
       SERVER_URL: $TWENTY_DOMAIN
-      REDIS_URL: $REDIS_URL
+      REDIS_URL: redis://redis:6379
       
       # Migrations disabled - handled by migration container
       DISABLE_DB_MIGRATIONS: "true"
       DISABLE_CRON_JOBS_REGISTRATION: false
 
-      STORAGE_TYPE: $STORAGE_TYPE
-      STORAGE_S3_REGION: $STORAGE_S3_REGION
-      STORAGE_S3_NAME: $STORAGE_S3_NAME
-      STORAGE_S3_ENDPOINT: $STORAGE_S3_ENDPOINT
+      STORAGE_TYPE: local
+      STORAGE_S3_REGION: 
+      STORAGE_S3_NAME: 
+      STORAGE_S3_ENDPOINT: 
 
-      APP_SECRET: $SERVICE_PASSWORD_APPSECRET
+      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
 
       # Optional integrations (set to false by default to avoid validation issues)
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
       CALENDAR_PROVIDER_GOOGLE_ENABLED: false
-      AUTH_GOOGLE_CLIENT_ID: $AUTH_GOOGLE_CLIENT_ID
-      AUTH_GOOGLE_CLIENT_SECRET: $AUTH_GOOGLE_CLIENT_SECRET
-      AUTH_GOOGLE_CALLBACK_URL: $AUTH_GOOGLE_CALLBACK_URL
-      AUTH_GOOGLE_APIS_CALLBACK_URL: $AUTH_GOOGLE_APIS_CALLBACK_URL
+      AUTH_GOOGLE_CLIENT_ID: 
+      AUTH_GOOGLE_CLIENT_SECRET: 
+      AUTH_GOOGLE_CALLBACK_URL: 
+      AUTH_GOOGLE_APIS_CALLBACK_URL: 
 
       CALENDAR_PROVIDER_MICROSOFT_ENABLED: false
       MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
       AUTH_MICROSOFT_ENABLED: false
-      AUTH_MICROSOFT_CLIENT_ID: $AUTH_MICROSOFT_CLIENT_ID
-      AUTH_MICROSOFT_CLIENT_SECRET: $AUTH_MICROSOFT_CLIENT_SECRET
-      AUTH_MICROSOFT_CALLBACK_URL: $AUTH_MICROSOFT_CALLBACK_URL
-      AUTH_MICROSOFT_APIS_CALLBACK_URL: $AUTH_MICROSOFT_APIS_CALLBACK_URL
+      AUTH_MICROSOFT_CLIENT_ID: 
+      AUTH_MICROSOFT_CLIENT_SECRET: 
+      AUTH_MICROSOFT_CALLBACK_URL: 
+      AUTH_MICROSOFT_APIS_CALLBACK_URL: 
 
       EMAIL_FROM_ADDRESS: contact@yourdomain.com
       EMAIL_FROM_NAME: John from YourDomain
       EMAIL_SYSTEM_ADDRESS: system@yourdomain.com
       EMAIL_DRIVER: smtp
-      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
+      EMAIL_SMTP_HOST: 
       EMAIL_SMTP_PORT: 465
-      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
-      EMAIL_SMTP_PASSWORD: ${SERVICE_PASSWORD_SMTP}
+      EMAIL_SMTP_USER: 
+      EMAIL_SMTP_PASSWORD: VbtyeXsHcoXG5ucWyb9A89BXUY35EhrKVbtyeXsHcoXG5ucWyb9A89BXUY35EhrK
 
     depends_on:
+      migration:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -95,46 +95,46 @@ services:
     restart: always
 
   worker:
-    image: twentycrm/twenty:${TAG:-latest}
+    image: twentycrm/twenty:latest
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
     environment:
-      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:$SERVICE_PASSWORD_DB@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
+      PG_DATABASE_URL: postgres://postgres:ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb@db:5432/default
       SERVER_URL: $TWENTY_DOMAIN
-      REDIS_URL: $REDIS_URL
+      REDIS_URL: redis://redis:6379
       DISABLE_DB_MIGRATIONS: "true"
 
-      STORAGE_TYPE: $STORAGE_TYPE
-      STORAGE_S3_REGION: $STORAGE_S3_REGION
-      STORAGE_S3_NAME: $STORAGE_S3_NAME
-      STORAGE_S3_ENDPOINT: $STORAGE_S3_ENDPOINT
+      STORAGE_TYPE: local
+      STORAGE_S3_REGION: 
+      STORAGE_S3_NAME: 
+      STORAGE_S3_ENDPOINT: 
 
-      APP_SECRET: $SERVICE_PASSWORD_APPSECRET
+      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
 
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
       CALENDAR_PROVIDER_GOOGLE_ENABLED: false
-      AUTH_GOOGLE_CLIENT_ID: $AUTH_GOOGLE_CLIENT_ID
-      AUTH_GOOGLE_CLIENT_SECRET: $AUTH_GOOGLE_CLIENT_SECRET
-      AUTH_GOOGLE_CALLBACK_URL: $AUTH_GOOGLE_CALLBACK_URL
-      AUTH_GOOGLE_APIS_CALLBACK_URL: $AUTH_GOOGLE_APIS_CALLBACK_URL
+      AUTH_GOOGLE_CLIENT_ID: 
+      AUTH_GOOGLE_CLIENT_SECRET: 
+      AUTH_GOOGLE_CALLBACK_URL: 
+      AUTH_GOOGLE_APIS_CALLBACK_URL: 
 
       CALENDAR_PROVIDER_MICROSOFT_ENABLED: false
       MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
       AUTH_MICROSOFT_ENABLED: false
-      AUTH_MICROSOFT_CLIENT_ID: $AUTH_MICROSOFT_CLIENT_ID
-      AUTH_MICROSOFT_CLIENT_SECRET: $AUTH_MICROSOFT_CLIENT_SECRET
-      AUTH_MICROSOFT_CALLBACK_URL: $AUTH_MICROSOFT_CALLBACK_URL
-      AUTH_MICROSOFT_APIS_CALLBACK_URL: $AUTH_MICROSOFT_APIS_CALLBACK_URL
+      AUTH_MICROSOFT_CLIENT_ID: 
+      AUTH_MICROSOFT_CLIENT_SECRET: 
+      AUTH_MICROSOFT_CALLBACK_URL: 
+      AUTH_MICROSOFT_APIS_CALLBACK_URL: 
 
       EMAIL_FROM_ADDRESS: contact@yourdomain.com
       EMAIL_FROM_NAME: John from YourDomain
       EMAIL_SYSTEM_ADDRESS: system@yourdomain.com
       EMAIL_DRIVER: smtp
-      EMAIL_SMTP_HOST: $EMAIL_SMTP_HOST
+      EMAIL_SMTP_HOST: 
       EMAIL_SMTP_PORT: 465
-      EMAIL_SMTP_USER: $EMAIL_SMTP_USER
-      EMAIL_SMTP_PASSWORD: $SERVICE_PASSWORD_SMTP
+      EMAIL_SMTP_USER: 
+      EMAIL_SMTP_PASSWORD: 
 
     depends_on:
       migration:
@@ -148,11 +148,11 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
-      POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ePcWO4vxASD30XbxUzDUTwKdUvDzYqmb
       POSTGRES_DB: default
     healthcheck:
-      test: pg_isready -U ${PG_DATABASE_USER:-postgres} -h localhost -d default
+      test: pg_isready -U postgres -h localhost -d default
       interval: 5s
       timeout: 5s
       retries: 10
