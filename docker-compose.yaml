@@ -13,16 +13,16 @@ services:
           sleep 1
         done
         echo 'Creating database and schemas...'
-        PGPASSWORD=db_dc594fe426008af06a79f500 psql -h db -U postgres -d postgres -c 'CREATE DATABASE \"default\";' || true
-        PGPASSWORD=db_dc594fe426008af06a79f500 psql -h db -U postgres -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
+        PGPASSWORD=${SERVICE_PASSWORD_POSTGRES} psql -h db -U postgres -d postgres -c 'CREATE DATABASE \"default\";' || true
+        PGPASSWORD=${SERVICE_PASSWORD_POSTGRES} psql -h db -U postgres -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
         echo 'Running migrations...'
         yarn database:migrate:prod || true
         echo 'Migration completed!'
       "
     environment:
-      PG_DATABASE_URL: postgres://postgres:db_dc594fe426008af06a79f500@db:5432/default
+      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@db:5432/default
       REDIS_URL: redis://redis:6379
-      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
+      APP_SECRET: ${SERVICE_BASE64_64_APP}
     depends_on:
       db:
         condition: service_healthy
@@ -40,8 +40,8 @@ services:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      PG_DATABASE_URL: postgres://postgres:db_dc594fe426008af06a79f500@db:5432/default
-      SERVER_URL: https://crm.revenueleak.com
+      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@db:5432/default
+      SERVER_URL: ${TWENTY_DOMAIN}
       REDIS_URL: redis://redis:6379
       
       # Migrations disabled - handled by migration container
@@ -53,11 +53,11 @@ services:
       STORAGE_S3_NAME: 
       STORAGE_S3_ENDPOINT: 
 
-      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
-      ACCESS_TOKEN_SECRET: RTqoAsZHdutAkiJx1N65lsURpuj/uQb5
-      LOGIN_TOKEN_SECRET: pn2/xb6rGHfUwLhgj8Xjuv0k0Iw9rB0+
-      REFRESH_TOKEN_SECRET: Q54S1LZxpirZtaWTFWYQJFeX8LDfvuxX
-      FILE_TOKEN_SECRET: caAIWEfvWc5ygA0yLw553qCef/Dhsn8B
+      APP_SECRET: ${SERVICE_BASE64_64_APP}
+      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS}
+      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN}
+      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH}
+      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE}
 
       # Optional integrations (set to false by default to avoid validation issues)
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
@@ -82,7 +82,7 @@ services:
       EMAIL_SMTP_HOST: 
       EMAIL_SMTP_PORT: 465
       EMAIL_SMTP_USER: 
-      EMAIL_SMTP_PASSWORD: VbtyeXsHcoXG5ucWyb9A89BXUY35EhrK
+      EMAIL_SMTP_PASSWORD: ${SERVICE_PASSWORD_SMTP}
 
     depends_on:
       migration:
@@ -104,8 +104,8 @@ services:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
     environment:
-      PG_DATABASE_URL: postgres://postgres:db_dc594fe426008af06a79f500@db:5432/default
-      SERVER_URL: https://crm.revenueleak.com
+      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@db:5432/default
+      SERVER_URL: ${TWENTY_DOMAIN}
       REDIS_URL: redis://redis:6379
       DISABLE_DB_MIGRATIONS: "true"
 
@@ -114,11 +114,11 @@ services:
       STORAGE_S3_NAME: 
       STORAGE_S3_ENDPOINT: 
 
-      APP_SECRET: 55tcB1yTVDaB2lhETNQphz9oxmArAf6pv8LqMezEiUkWnz6OdUPMSkKmF2NN8jJW
-      ACCESS_TOKEN_SECRET: RTqoAsZHdutAkiJx1N65lsURpuj/uQb5
-      LOGIN_TOKEN_SECRET: pn2/xb6rGHfUwLhgj8Xjuv0k0Iw9rB0+
-      REFRESH_TOKEN_SECRET: Q54S1LZxpirZtaWTFWYQJFeX8LDfvuxX
-      FILE_TOKEN_SECRET: caAIWEfvWc5ygA0yLw553qCef/Dhsn8B
+      APP_SECRET: ${SERVICE_BASE64_64_APP}
+      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS}
+      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN}
+      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH}
+      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE}
 
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
       CALENDAR_PROVIDER_GOOGLE_ENABLED: false
@@ -142,7 +142,7 @@ services:
       EMAIL_SMTP_HOST: 
       EMAIL_SMTP_PORT: 465
       EMAIL_SMTP_USER: 
-      EMAIL_SMTP_PASSWORD: VbtyeXsHcoXG5ucWyb9A89BXUY35EhrK
+      EMAIL_SMTP_PASSWORD: ${SERVICE_PASSWORD_SMTP}
 
     depends_on:
       migration:
@@ -157,7 +157,7 @@ services:
       - db-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: db_dc594fe426008af06a79f500
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
       POSTGRES_DB: default
     healthcheck:
       test: pg_isready -U postgres -h localhost -d default
