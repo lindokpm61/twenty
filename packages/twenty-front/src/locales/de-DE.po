@@ -342,6 +342,13 @@ msgstr "Aktiv"
 msgid "Active API keys created by you or your team."
 msgstr "Aktive API-Schlüssel, die von Ihnen oder Ihrem Team erstellt wurden."
 
+#. js-lingui-id: KKfos4
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramEmptyTriggerReadonly.tsx
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramEmptyTriggerReadonly.tsx
+#: src/modules/workflow/workflow-diagram/components/WorkflowDiagramEmptyTriggerEditable.tsx
+msgid "Add a Trigger"
+msgstr ""
+
 #. js-lingui-id: MPPZ54
 #: src/modules/settings/accounts/components/SettingsAccountsConnectedAccountsListCard.tsx
 msgid "Add account"
@@ -382,6 +389,7 @@ msgstr "Fügen Sie Eingaben zu Ihrem Formular hinzu"
 
 #. js-lingui-id: Hkobke
 #: src/modules/object-record/record-table/record-table-section/components/RecordTableRecordGroupSectionAddNew.tsx
+#: src/modules/object-record/record-table/components/RecordTableAddNew.tsx
 msgid "Add new"
 msgstr "Neu hinzufügen"
 
@@ -4510,7 +4518,7 @@ msgid "Phone number copied to clipboard"
 msgstr "Telefonnummer in die Zwischenablage kopiert"
 
 #. js-lingui-id: FdlpPK
-#: src/modules/workflow/workflow-variables/components/WorkflowVariablesDropdownObjectItems.tsx
+#: src/modules/workflow/workflow-variables/components/WorkflowVariablesDropdownAllItems.tsx
 msgid "Pick a {nameSingular} record"
 msgstr "Wählen Sie einen {nameSingular} Datensatz aus"
 
