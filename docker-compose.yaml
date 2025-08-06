@@ -2,7 +2,7 @@ name: twenty
 
 services:
   server:
-    image: twentycrm/twenty:$TAG
+    image: twentycrm/twenty:${TAG:-latest}
     user: root
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
@@ -11,7 +11,7 @@ services:
       - "3000:3000"
     environment:
       NODE_PORT: 3000
-      PG_DATABASE_URL: postgres://$PG_DATABASE_USER:$SERVICE_PASSWORD_DB@$PG_DATABASE_HOST:$PG_DATABASE_PORT/default
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:$SERVICE_PASSWORD_DB@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
       SERVER_URL: $TWENTY_DOMAIN
       REDIS_URL: $REDIS_URL
 
@@ -60,12 +60,12 @@ services:
     restart: always
 
   worker:
-    image: twentycrm/twenty:$TAG
+    image: twentycrm/twenty:${TAG:-latest}
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
     environment:
-      PG_DATABASE_URL: postgres://$PG_DATABASE_USER:$SERVICE_PASSWORD_DB@$PG_DATABASE_HOST:$PG_DATABASE_PORT/default
+      PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:$SERVICE_PASSWORD_DB@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
       SERVER_URL: $TWENTY_DOMAIN
       REDIS_URL: $REDIS_URL
       DISABLE_DB_MIGRATIONS: "true"
@@ -113,10 +113,10 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: $PG_DATABASE_USER
+      POSTGRES_USER: ${PG_DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: $SERVICE_PASSWORD_DB
     healthcheck:
-      test: pg_isready -U $PG_DATABASE_USER -h localhost -d postgres
+      test: pg_isready -U ${PG_DATABASE_USER:-postgres} -h localhost -d postgres
       interval: 5s
       timeout: 5s
       retries: 10
