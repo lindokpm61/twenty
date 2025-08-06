@@ -12,8 +12,8 @@ services:
     environment:
       NODE_PORT: 3000
       PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${SERVICE_PASSWORD_DB:-postgres}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
-      # Fixed: Use SERVICE_FQDN_SERVER_3000 with fallback
-      SERVER_URL: ${SERVICE_FQDN_SERVER_3000:-http://localhost:3000}
+      # Use manual domain variable - NO QUOTES to avoid .env issues
+      SERVER_URL: ${TWENTY_DOMAIN:-http://localhost:3000}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
       STORAGE_TYPE: ${STORAGE_TYPE:-local}
@@ -67,7 +67,7 @@ services:
     command: ["yarn", "worker:prod"]
     environment:
       PG_DATABASE_URL: postgres://${PG_DATABASE_USER:-postgres}:${SERVICE_PASSWORD_DB:-postgres}@${PG_DATABASE_HOST:-db}:${PG_DATABASE_PORT:-5432}/default
-      SERVER_URL: ${SERVICE_FQDN_SERVER_3000:-http://localhost:3000}
+      SERVER_URL: ${TWENTY_DOMAIN:-http://localhost:3000}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DISABLE_DB_MIGRATIONS: "true"
 
@@ -93,9 +93,9 @@ services:
       AUTH_MICROSOFT_CALLBACK_URL: ${AUTH_MICROSOFT_CALLBACK_URL}
       AUTH_MICROSOFT_APIS_CALLBACK_URL: ${AUTH_MICROSOFT_APIS_CALLBACK_URL}
 
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME}
-      EMAIL_SYSTEM_ADDRESS: ${EMAIL_SYSTEM_ADDRESS}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-contact@yourdomain.com}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-John from YourDomain}
+      EMAIL_SYSTEM_ADDRESS: ${EMAIL_SYSTEM_ADDRESS:-system@yourdomain.com}
       EMAIL_DRIVER: ${EMAIL_DRIVER:-smtp}
       EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
       EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT:-465}
