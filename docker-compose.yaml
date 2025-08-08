@@ -27,7 +27,7 @@ services:
     restart: always
 
   twenty-server:
-    image: twentycrm/twenty:v0.10.4
+    image: twentycrm/twenty:latest
     ports:
       - "3000:3000"
     environment:
