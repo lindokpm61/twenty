@@ -1,101 +1,68 @@
-name: twenty
-
+version: '3.8'
 services:
   twenty-redis:
-    image: redis:7-alpine
+    image: 'redis:7-alpine'
     volumes:
-      - twenty-redis-data:/data
+      - 'twenty-redis-data:/data'
     restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   twenty-db:
-    image: twentycrm/twenty-postgres:latest
+    image: 'twentycrm/twenty-postgres:latest'
     volumes:
-      - twenty-db-data:/var/lib/postgresql/data
+      - 'twenty-db-data:/var/lib/postgresql/data'
     environment:
-      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      POSTGRES_PASSWORD: '${PGPASSWORD_SUPERUSER}'
       POSTGRES_DB: default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U postgres'
       interval: 5s
       timeout: 5s
       retries: 10
     restart: always
-
   twenty-server:
-    image: twentycrm/twenty:latest
+    image: 'twentycrm/twenty:latest'
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
-      APP_SECRET: ${SERVICE_BASE64_64_APP}
-      SERVER_URL: ${TWENTY_DOMAIN}
-      FRONT_BASE_URL: ${TWENTY_DOMAIN}
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@twenty-db:5432/default
-      REDIS_URL: redis://twenty-redis:6379
-      
-      # Enable migrations - let server handle everything
-      ENABLE_DB_MIGRATIONS: "true"
-      DATABASE_MIGRATIONS: "true"
-      RUN_DATABASE_MIGRATIONS: "true"
+      APP_SECRET: '${APP_SECRET}'
+      SERVER_URL: '${SERVER_URL}'
+      FRONT_BASE_URL: '${SERVER_URL}'
+      PG_DATABASE_URL: 'postgres://postgres:${PGPASSWORD_SUPERUSER}@twenty-db:5432/default'
+      REDIS_URL: 'redis://twenty-redis:6379'
+      ENABLE_DB_MIGRATIONS: 'true'
+      DATABASE_MIGRATIONS: 'true'
+      RUN_DATABASE_MIGRATIONS: 'true'
       NODE_ENV: production
-      
-      # Storage - Local only
-      STORAGE_TYPE: local
-
-      # Essential secrets
-      APP_SECRET: ${SERVICE_BASE64_64_APP}
-
-      # Disable all optional integrations
-      MESSAGING_PROVIDER_GMAIL_ENABLED: false
-      CALENDAR_PROVIDER_GOOGLE_ENABLED: false
-      CALENDAR_PROVIDER_MICROSOFT_ENABLED: false
-      MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
-      AUTH_MICROSOFT_ENABLED: false
-
     depends_on:
       twenty-db:
         condition: service_healthy
       twenty-redis:
         condition: service_started
     volumes:
-      - twenty-server-data:/app/.local-storage
+      - 'twenty-server-data:/app/.local-storage'
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://localhost:3000/healthz'
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 180s
-
   twenty-worker:
-    image: twentycrm/twenty:latest
-    command: yarn worker:prod
+    image: 'twentycrm/twenty:latest'
+    command: 'yarn worker:prod'
     environment:
-      APP_SECRET: ${SERVICE_BASE64_64_APP}
-      SERVER_URL: ${TWENTY_DOMAIN}
-      FRONT_BASE_URL: ${TWENTY_DOMAIN}
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@twenty-db:5432/default
-      REDIS_URL: redis://twenty-redis:6379
-      ENABLE_DB_MIGRATIONS: "false"
+      APP_SECRET: '${APP_SECRET}'
+      SERVER_URL: '${SERVER_URL}'
+      FRONT_BASE_URL: '${SERVER_URL}'
+      PG_DATABASE_URL: 'postgres://postgres:${PGPASSWORD_SUPERUSER}@twenty-db:5432/default'
+      REDIS_URL: 'redis://twenty-redis:6379'
+      ENABLE_DB_MIGRATIONS: 'false'
       NODE_ENV: production
-      
-      # Storage - Local only
-      STORAGE_TYPE: local
-
-      # Essential secrets
-      APP_SECRET: ${SERVICE_BASE64_64_APP}
-
-      # Disable all optional integrations
-      MESSAGING_PROVIDER_GMAIL_ENABLED: false
-      CALENDAR_PROVIDER_GOOGLE_ENABLED: false
-      CALENDAR_PROVIDER_MICROSOFT_ENABLED: false
-      MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
-      AUTH_MICROSOFT_ENABLED: false
-
     depends_on:
       twenty-server:
         condition: service_healthy
@@ -104,10 +71,9 @@ services:
       twenty-redis:
         condition: service_started
     volumes:
-      - twenty-server-data:/app/.local-storage
+      - 'twenty-server-data:/app/.local-storage'
     restart: always
-
 volumes:
-  twenty-db-data:
-  twenty-server-data:
-  twenty-redis-data:
+  twenty-db-data: null
+  twenty-server-data: null
+  twenty-redis-data: null
