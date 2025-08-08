@@ -1,41 +1,10 @@
 name: twenty
 
 services:
-  # Migration container - creates schemas and runs migrations
-  migration:
-    image: twentycrm/twenty:v0.10.4
-    command: |
-      sh -c "
-        echo 'Installing PostgreSQL client...'
-        apt-get update && apt-get install -y postgresql-client || true
-        echo 'Waiting for database...'
-        until pg_isready -h db -U postgres -d postgres; do
-          sleep 1
-        done
-        echo 'Creating database and schemas...'
-        PGPASSWORD=${SERVICE_PASSWORD_POSTGRES} psql -h db -U postgres -d postgres -c 'CREATE DATABASE \"default\";' || true
-        PGPASSWORD=${SERVICE_PASSWORD_POSTGRES} psql -h db -U postgres -d default -c 'CREATE SCHEMA IF NOT EXISTS core; CREATE SCHEMA IF NOT EXISTS metadata;' || true
-        echo 'Running migrations...'
-        yarn database:migrate:prod || true
-        echo 'Migration completed!'
-      "
-    environment:
-      PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@db:5432/default
-      REDIS_URL: redis://redis:6379
-      APP_SECRET: ${SERVICE_BASE64_64_APP}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: "no"
-
   server:
     image: twentycrm/twenty:v0.10.4
-    user: root
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
-      - docker-data:/app/docker-data
     ports:
       - "3000:3000"
     environment:
@@ -44,8 +13,8 @@ services:
       SERVER_URL: ${TWENTY_DOMAIN}
       REDIS_URL: redis://redis:6379
       
-      # Migrations disabled - handled by migration container
-      DISABLE_DB_MIGRATIONS: "true"
+      # Let server handle migrations - no separate migration container needed
+      DISABLE_DB_MIGRATIONS: false
       DISABLE_CRON_JOBS_REGISTRATION: false
 
       # Storage - Local only
@@ -65,12 +34,7 @@ services:
       MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
       AUTH_MICROSOFT_ENABLED: false
 
-      # Email disabled for now to avoid issues
-      EMAIL_DRIVER: disabled
-
     depends_on:
-      migration:
-        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -91,7 +55,7 @@ services:
       PG_DATABASE_URL: postgres://postgres:${SERVICE_PASSWORD_POSTGRES}@db:5432/default
       SERVER_URL: ${TWENTY_DOMAIN}
       REDIS_URL: redis://redis:6379
-      DISABLE_DB_MIGRATIONS: "true"
+      DISABLE_DB_MIGRATIONS: true
 
       # Storage - Local only
       STORAGE_TYPE: local
@@ -110,14 +74,9 @@ services:
       MESSAGING_PROVIDER_MICROSOFT_ENABLED: false
       AUTH_MICROSOFT_ENABLED: false
 
-      # Email disabled for now to avoid issues
-      EMAIL_DRIVER: disabled
-
     depends_on:
-      migration:
-        condition: service_completed_successfully
       server:
-        condition: service_started
+        condition: service_healthy
     restart: always
 
   db:
@@ -138,6 +97,7 @@ services:
   redis:
     image: redis
     restart: always
+    command: ["--maxmemory-policy", "noeviction"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -145,6 +105,5 @@ services:
       retries: 10
 
 volumes:
-  docker-data:
   db-data:
   server-local-data:
