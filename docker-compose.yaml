@@ -47,10 +47,7 @@ services:
       STORAGE_TYPE: local
 
       # Essential secrets
-      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS}
-      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN}
-      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH}
-      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE}
+      APP_SECRET: ${SERVICE_BASE64_64_APP}
 
       # Disable all optional integrations
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
@@ -75,7 +72,7 @@ services:
       start_period: 180s
 
   twenty-worker:
-    image: twentycrm/twenty:v0.10.4
+    image: twentycrm/twenty:latest
     command: yarn worker:prod
     environment:
       APP_SECRET: ${SERVICE_BASE64_64_APP}
@@ -90,10 +87,7 @@ services:
       STORAGE_TYPE: local
 
       # Essential secrets
-      ACCESS_TOKEN_SECRET: ${SERVICE_BASE64_32_ACCESS}
-      LOGIN_TOKEN_SECRET: ${SERVICE_BASE64_32_LOGIN}
-      REFRESH_TOKEN_SECRET: ${SERVICE_BASE64_32_REFRESH}
-      FILE_TOKEN_SECRET: ${SERVICE_BASE64_32_FILE}
+      APP_SECRET: ${SERVICE_BASE64_64_APP}
 
       # Disable all optional integrations
       MESSAGING_PROVIDER_GMAIL_ENABLED: false
