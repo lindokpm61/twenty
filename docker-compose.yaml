@@ -3,7 +3,7 @@ name: twenty
 services:
   # Migration container - creates schemas and runs migrations
   migration:
-    image: twentycrm/twenty:latest
+    image: twentycrm/twenty:v0.10.4
     command: |
       sh -c "
         echo 'Installing PostgreSQL client...'
@@ -31,7 +31,7 @@ services:
     restart: "no"
 
   server:
-    image: twentycrm/twenty:latest
+    image: twentycrm/twenty:v0.10.4
     user: root
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
@@ -83,7 +83,7 @@ services:
     restart: always
 
   worker:
-    image: twentycrm/twenty:latest
+    image: twentycrm/twenty:v0.10.4
     volumes:
       - server-local-data:/app/packages/twenty-server/.local-storage
     command: ["yarn", "worker:prod"]
